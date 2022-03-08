@@ -2,7 +2,7 @@
  * @format
  */
 
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {SafeAreaView, StyleSheet, Text, useColorScheme} from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -19,21 +19,27 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
-const HomeScreen = (props: HomeScreenProps) => {
+const HomeScreen: React.FC<HomeScreenProps> = props => {
+  const firebaseAuth = auth();
+
   // Handle user state changes
-  const onAuthStateChanged: FirebaseAuthTypes.AuthListenerCallback = u => {
-    if (u !== null) {
-      props.navigation.replace('ChatRooms');
-    }
-  };
+  const onAuthStateChanged =
+    useCallback<FirebaseAuthTypes.AuthListenerCallback>(
+      u => {
+        if (u !== null) {
+          props.navigation.replace('ChatRooms');
+        }
+      },
+      [props.navigation],
+    );
 
   useEffect(() => {
-    return auth().onAuthStateChanged(onAuthStateChanged); // unsubscribe on unmount
-  });
+    return firebaseAuth.onAuthStateChanged(onAuthStateChanged); // unsubscribe on unmount
+  }, [firebaseAuth, onAuthStateChanged]);
 
   useEffect(() => {
     // Trigger anonymous login
-    auth()
+    firebaseAuth
       .signInAnonymously()
       .then(() => {
         console.log('User signed in anonymously');
@@ -45,13 +51,14 @@ const HomeScreen = (props: HomeScreenProps) => {
 
         console.error(error);
       });
-  }, []);
+  }, [firebaseAuth]);
 
   return <></>;
 };
 
 type ChatRoomsProps = NativeStackScreenProps<RootStackParamList, 'ChatRooms'>;
-const ChatRooms = (props: ChatRoomsProps) => {
+
+const ChatRooms: React.FC<ChatRoomsProps> = props => {
   const [user, setUser] = useState<FirebaseAuthTypes.User>();
   useEffect(() => {
     return auth().onAuthStateChanged(u => {
